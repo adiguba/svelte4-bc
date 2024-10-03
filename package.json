@@ -1,0 +1,22 @@
+{
+  "name": "svelte4-bc",
+  "version": "0.0.1",
+  "description": "",
+  "type": "module",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "exports": "./index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "packageManager": "pnpm@9.4.0",
+  "engines": {
+    "pnpm": "^9.0.0"
+  },
+  "keywords": [],
+  "author": "adiGuba",
+  "license": "ISC",
+  "dependencies": {
+    "svelte4-bc": "file:"
+  }
+}
