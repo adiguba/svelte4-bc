@@ -1,7 +1,7 @@
 {
   "name": "svelte4-bc",
   "version": "0.0.1",
-  "description": "",
+  "description": "Svelte 4 Backward Compatibility for Svelte 5",
   "type": "module",
   "main": "index.js",
   "types": "index.d.ts",
@@ -13,10 +13,23 @@
   "engines": {
     "pnpm": "^9.0.0"
   },
-  "keywords": [],
+  "keywords": [
+    "svelte",
+    "svelte4",
+    "svelte5",
+    "Backward Compatibility"
+  ],
   "author": "adiGuba",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "svelte4-bc": "file:"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/adiguba/svelte4-bc.git"
+  },
+  "bugs": {
+    "url": "https://github.com/adiguba/svelte4-bc/issues"
+  },
+  "homepage": "https://github.com/adiguba/svelte4-bc#readme"
 }
