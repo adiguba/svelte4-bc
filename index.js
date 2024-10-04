@@ -60,11 +60,13 @@ function populate_slots(comp, props, metadata, ssr) {
 	}
 	for (const name of Object.getOwnPropertyNames(props.$$slots)) {
 
-		const is_default = name === 'default';
-		// the default slot is already managed by Svelte 5
-		if (is_default && props.$$slots[name] === true) {
+		
+		// snippets put true on slots
+		if (props.$$slots[name] === true) {
 			continue;
 		}
+
+		const is_default = name === 'default';
 
 		const meta = metadata[name] ?? false;
 
