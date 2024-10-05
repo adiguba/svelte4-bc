@@ -30,6 +30,7 @@
   "author": "adiGuba",
   "license": "MIT",
   "dependencies": {
+    "esm-env": "^1.0.0",
     "svelte4-bc": "file:"
   },
   "peerDependencies": {

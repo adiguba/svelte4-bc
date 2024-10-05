@@ -1,14 +1,15 @@
 /** @import { Svelte4BCConfig, Svelte4BCPropConfig, Svelte4BCEventConfig, Svelte4BCEventWrapper } from "./index.js" */
 /** @import { Props } from "./internal.js" */
 
+import { BROWSER, DEV } from "esm-env";
 import { handlers } from "svelte/legacy";
 
 
 /**
- * @param {string} comp the component name
  * @param {Props} props
+ * @param {string} [comp] the component name
  */
-function throw_error_on_slots(comp, props) {
+function throw_error_on_slots(props, comp) {
 	if (props.$$slots) {
 		for (const name of Object.getOwnPropertyNames(props.$$slots)) {
 			// the default slot is already managed by Svelte 5
@@ -20,10 +21,10 @@ function throw_error_on_slots(comp, props) {
 }
 
 /**
- * @param {string} comp the component name
  * @param {Props} props
+ * @param {string} [comp] the component name
  */
-function throw_error_on_events(comp, props) {
+function throw_error_on_events(props, comp) {
 	if (props.$$events) {
 		for (const name of Object.getOwnPropertyNames(props.$$events)) {
 			throw new Error(`[Svelte4-BC] Illegal directive "on:${name}" for component ${comp}`);
@@ -51,12 +52,53 @@ function create_slot(param, ssr) {
 }
 
 /**
- * @param {string} comp the component name
+ * @param {Function} slot The slot function
+ * @param {string[]} args the args name
+ * @returns {(anchor:any,...params:any)=>void}
+ */
+function create_slot_wrapper(slot, args) {
+	if (args.length === 0) {
+		return (anchor, ...params) => {
+			let slotParams;
+			if (params.length > 1 && params[0] != null && typeof params[0] === 'object') {
+				if (BROWSER) {
+					slotParams = new Proxy({}, {
+						get(target, prop, receiver) {
+							return Reflect.get(params[0](), prop, receiver);
+						}
+					});
+				} else {
+					slotParams = params[0];
+				}
+			} else {
+				slotParams = {};
+			}
+			slot(anchor, slotParams);
+		}
+	}
+	return (anchor, ...params) => {
+		/** @type {Record<string,any>} */
+		const slotParams = {};
+		const max = params.length;
+		args.forEach((name, index) => {
+			if (name && index < max) {
+				if (BROWSER) {
+					Object.defineProperty(slotParams, name, { get: ()=>params[index] });
+				} else {
+					slotParams[name] = params[index];
+				}
+			}
+		});
+		slot(anchor, slotParams);
+	}
+}
+
+/**
  * @param {Props} props
  * @param {Record<string, boolean | string | string[] | Svelte4BCPropConfig>} metadata
- * @param {boolean} ssr
+ * @param {string} [comp] the component name
  */
-function populate_slots(comp, props, metadata, ssr) {
+function populate_slots(props, metadata, comp) {
 	if (props.$$slots === undefined) {
 		return;
 	}
@@ -105,30 +147,12 @@ function populate_slots(comp, props, metadata, ssr) {
 			throw new Error(`[Svelte4-BC] Conflict between slot="${name}" and prop '${prop}' for component ${comp}`);
 		}
 
-		if (/** @type {any} */(import.meta).hot) {
+		if (DEV) {
 			console.warn(`[Svelte4-BC] slot "${name}" mapped into prop "${prop}" for component ${comp}`);
 		}
 
 		const slot = /** @type {Function} */ (props.$$slots[name]);
-
-		if (args.length === 0) {
-			props[prop] = /** @type {($$anchor:any,...params:any)=>void}) */ (($$anchor, ...params) => {
-				const slots = (params.length>0) ? create_slot(params[0], ssr) : {};
-				slot($$anchor, slots);
-			});
-		} else {
-			props[prop] = /** @type {($$anchor:any,...params:any)=>void}) */ (($$anchor, ...params) => {
-				const slot_props = {};
-				const max = params.length;
-				args.forEach((name, index) => {
-					if (name && index < max) {
-						const get = ssr ? ()=>params[index] : params[index];
-						Object.defineProperty(slot_props, name, { get });
-					}
-				});
-				slot($$anchor, slot_props);
-			});
-		}
+		props[prop] = create_slot_wrapper(slot, args);
 	}
 }
 
@@ -185,11 +209,11 @@ function get_event(name, metadata) {
 }
 
 /**
- * @param {string} comp the component name
  * @param {Props} props
  * @param {Record<string, boolean | string | Svelte4BCEventWrapper | Array<Svelte4BCEventWrapper> | Svelte4BCEventConfig>} metadata
+ * @param {string} [comp] the component name
  */
-function populate_events(comp, props, metadata) {
+function populate_events(props, metadata, comp) {
 	if (props.$$events === undefined) {
 		return;
 	}
@@ -224,12 +248,12 @@ function populate_events(comp, props, metadata) {
 
 
 /**
- * @param {string} comp the component name
  * @param {Props} props
  * @param {false | undefined | Record<string, boolean | string | Svelte4BCEventWrapper | Array<Svelte4BCEventWrapper> | Svelte4BCEventConfig>} metadata
+ * @param {string} [comp] the component name
  */
-function create_dispatch_proxy(comp, props, metadata) {
-	const value = new Proxy(props.$$events ?? {}, {
+function create_dispatch_proxy(props, metadata, comp) {
+	props.$$events = new Proxy(props.$$events ?? {}, {
 		get(target, p, receiver) {
 			if (typeof p === 'string') {
 				const [prop, wrap] = get_event(p, metadata);
@@ -237,7 +261,7 @@ function create_dispatch_proxy(comp, props, metadata) {
 					// event is invalid
 					throw new Error(`[Svelte4-BC] Illegal dispatch("${p}") for component ${comp}`);
 				}
-				if (/** @type {any} */(import.meta).hot) {
+				if (DEV) {
 					console.warn(`[Svelte4-BC] dispatch("${p}") mapped into prop "${prop}" for component ${comp}`);
 				}
 				let event = props[prop];
@@ -249,14 +273,13 @@ function create_dispatch_proxy(comp, props, metadata) {
 			return Reflect.get(target, p, receiver);
 		}
 	});
-	Object.defineProperty(props, '$$events', { value, enumerable: false});
 }
 
 /**
- * @param {string} comp the component name
  * @param {Props} props
+ * @param {string} [comp] the component name
  */
-function throw_error_on_dispatch(comp, props) {
+function throw_error_on_dispatch(props, comp) {
 	props.$$events = new Proxy(props.$$events ?? {}, {
 		get(target, prop, receiver) {
 			throw new Error(`[Svelte4-BC] Illegal dispatch of event "on:${prop.toString()}" for component ${comp}`);
@@ -270,40 +293,49 @@ const hmr_already_converted = Symbol();
  * Svelte4-BC converter
  * @param {Props & {[hmr_already_converted]?:boolean}} props the props
  * @param {Svelte4BCConfig} config the svelte4_bc config
- * @param {string} comp
- * @param {boolean | undefined} ssr
+ * @param {string | undefined} [comp]
+ * @returns {Props} 
  */
-export function svelte4_bc_convert(props, config, comp='?', ssr=false) {
-	if (/** @type {any} */(import.meta).hot) {
-		if (props[hmr_already_converted]) {
-			console.warn(`[Svelte4-BC] Convert slots/on:event for ${comp} is ignored on Hot-Module-Reload`);
-			return;
-		}
-		console.info(`[Svelte4-BC] Convert slots/on:event for ${comp}`);
-		props[hmr_already_converted] = true;
+export function svelte4_bc_convert(props, config, comp) {
+	if (DEV) {
+		// In DEV Mode, we have to use a proxy
+		const original_props = props;
+		props = new Proxy({}, {
+			get(target, p, receiver) {
+				let value = Reflect.get(target, p, receiver);
+				if (value === undefined) {
+					value = Reflect.get(original_props, p, receiver);
+				}
+				return value;
+			}
+		});
 	}
 	if (config === false) {
-		throw_error_on_events(comp, props);
-		throw_error_on_slots(comp, props);
-		throw_error_on_dispatch(comp, props);
+		throw_error_on_slots(props);
+		if (BROWSER) {
+			throw_error_on_events(props, comp);
+			throw_error_on_dispatch(props, comp);
+		}
 	} else {
-		if (config.events) {
-			populate_events(comp, props, config.events);
-		} else if (config.events === false) {
-			throw_error_on_events(comp, props);
-		}
 		if (config.slots) {
-			populate_slots(comp, props, config.slots, ssr);
+			populate_slots(props, config.slots, comp);
 		} else if (config.slots === false) {
-			throw_error_on_slots(comp, props);
+			throw_error_on_slots(props, comp);
 		}
-
-		if (config.no_dispatch) {
-			throw_error_on_dispatch(comp, props);
-		} else {
-			create_dispatch_proxy(comp, props, config.events);
+		if (BROWSER) {
+			if (config.events) {
+				populate_events(props, config.events, comp);
+			} else if (config.events === false) {
+				throw_error_on_events(props, comp);
+			}
+			if (config.no_dispatch) {
+				throw_error_on_dispatch(props, comp);
+			} else {
+				create_dispatch_proxy(props, config.events, comp);
+			}
 		}
 	}
+	return props;
 }
 
 /**
@@ -313,9 +345,7 @@ export function svelte4_bc_convert(props, config, comp='?', ssr=false) {
  * @returns {T}
  */
 export function Svelte4BCWrapper(comp, config) {
-	// How to handle SSR ?
 	return /** @type {T} */ (($$anchor, $$props) => {
-		svelte4_bc_convert($$props, config);
-		return comp($$anchor, $$props);
+		return comp($$anchor, svelte4_bc_convert($$props, config));
 	});
 }

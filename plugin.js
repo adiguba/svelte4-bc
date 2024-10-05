@@ -45,8 +45,8 @@ export function svelte4BCPlugin(show_logs = false) {
 		},
 		transform(code, id, options) {
 			if (id.endsWith('.svelte') && code.includes('\nexport const svelte4_bc =')) {
-				const ssr = options?.ssr === true;
 				if (show_logs) {
+                    const ssr = options?.ssr === true;
 					console.info(`${prefix} Transform ${ssr ? server : client}/${mode} for ${blue(id)}`);
 				}
 				let import_name = 'svelte4_bc_convert';
@@ -57,17 +57,11 @@ export function svelte4BCPlugin(show_logs = false) {
 				if (svelte4_bc_convert != import_name) {
 					import_name += ' as ' + svelte4_bc_convert;
 				}
-				let args = '';
-				if (is_dev) {
-					args = `, "${id.replaceAll('"','_')}"`;
-					if (ssr) {
-						args += ", true";
-					}
-				}
+				const componentName = is_dev ? `, "${id.replaceAll('"','_')}"` : '';
 				return `import { ${import_name} } from "svelte4-bc";\n` +
-					code.replace(regex, (match, func) => {
-						const comp_name = is_dev ? `"${id.replaceAll('"','_')}"`: (func + '.name');
-						return match + ` ${svelte4_bc_convert}($$props, svelte4_bc${args});`
+					code.replace(regex, (match) => {
+                        // TODO : remove $$props = in production mode ?
+						return match + `$$props = ${svelte4_bc_convert}($$props, svelte4_bc${componentName});`
 					});
 			}
 		}
