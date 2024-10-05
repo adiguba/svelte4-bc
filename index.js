@@ -1,5 +1,7 @@
-/** @import { Svelte4BC_Config, Svelte4BC_PropConfig, Svelte4BC_EventConfig, Svelte4BC_EventWrapper } from "./index.js" */
+/** @import { Svelte4BCConfig, Svelte4BCPropConfig, Svelte4BCEventConfig, Svelte4BCEventWrapper } from "./index.js" */
 /** @import { Props } from "./internal.js" */
+
+import { handlers } from "svelte/legacy";
 
 
 /**
@@ -51,7 +53,7 @@ function create_slot(param, ssr) {
 /**
  * @param {string} comp the component name
  * @param {Props} props
- * @param {Record<string, boolean | string | string[] | Svelte4BC_PropConfig>} metadata
+ * @param {Record<string, boolean | string | string[] | Svelte4BCPropConfig>} metadata
  * @param {boolean} ssr
  */
 function populate_slots(comp, props, metadata, ssr) {
@@ -132,8 +134,8 @@ function populate_slots(comp, props, metadata, ssr) {
 
 /**
  * 
- * @param {Array<Svelte4BC_EventWrapper>} wrappers 
- * @returns {Svelte4BC_EventWrapper}
+ * @param {Array<Svelte4BCEventWrapper>} wrappers 
+ * @returns {Svelte4BCEventWrapper}
  */
 function wrap_all(wrappers) {
 	return (fn) => {
@@ -147,8 +149,8 @@ function wrap_all(wrappers) {
 /**
  * Return the translated name of the event
  * @param {string} name 
- * @param {false | undefined | Record<string, boolean | string | Svelte4BC_EventWrapper | Array<Svelte4BC_EventWrapper> | Svelte4BC_EventConfig>} metadata
- * @return {[string | null, Svelte4BC_EventWrapper | null ]}
+ * @param {false | undefined | Record<string, boolean | string | Svelte4BCEventWrapper | Array<Svelte4BCEventWrapper> | Svelte4BCEventConfig>} metadata
+ * @return {[string | null, Svelte4BCEventWrapper | null ]}
  */
 function get_event(name, metadata) {
 	let prop = null;
@@ -183,39 +185,9 @@ function get_event(name, metadata) {
 }
 
 /**
- * Function to mimic the multiple listeners available in svelte 4
- * TODO : import from "svelte/legacy" ?
- * @param {EventListener[]} handlers
- * @returns {EventListener}
- */
-export function handlers(...handlers) {
-	return function (event) {
-		const { stopImmediatePropagation } = event;
-		let stopped = false;
-
-		event.stopImmediatePropagation = () => {
-			stopped = true;
-			stopImmediatePropagation.call(event);
-		};
-
-		for (const handler of handlers) {
-			try {
-				// @ts-expect-error `this` is not typed
-				handler?.call(this, event);
-			} catch (e) {
-				window.reportError(e);
-			}
-			if (stopped) {
-				break;
-			}
-		}
-	};
-}
-
-/**
  * @param {string} comp the component name
  * @param {Props} props
- * @param {Record<string, boolean | string | Svelte4BC_EventWrapper | Array<Svelte4BC_EventWrapper> | Svelte4BC_EventConfig>} metadata
+ * @param {Record<string, boolean | string | Svelte4BCEventWrapper | Array<Svelte4BCEventWrapper> | Svelte4BCEventConfig>} metadata
  */
 function populate_events(comp, props, metadata) {
 	if (props.$$events === undefined) {
@@ -254,7 +226,7 @@ function populate_events(comp, props, metadata) {
 /**
  * @param {string} comp the component name
  * @param {Props} props
- * @param {false | undefined | Record<string, boolean | string | Svelte4BC_EventWrapper | Array<Svelte4BC_EventWrapper> | Svelte4BC_EventConfig>} metadata
+ * @param {false | undefined | Record<string, boolean | string | Svelte4BCEventWrapper | Array<Svelte4BCEventWrapper> | Svelte4BCEventConfig>} metadata
  */
 function create_dispatch_proxy(comp, props, metadata) {
 	const value = new Proxy(props.$$events ?? {}, {
@@ -297,7 +269,7 @@ const hmr_already_converted = Symbol();
 /**
  * Svelte4-BC converter
  * @param {Props & {[hmr_already_converted]?:boolean}} props the props
- * @param {Svelte4BC_Config} config the svelte4_bc config
+ * @param {Svelte4BCConfig} config the svelte4_bc config
  * @param {string} comp
  * @param {boolean | undefined} ssr
  */
@@ -334,79 +306,16 @@ export function svelte4_bc_convert(props, config, comp='?', ssr=false) {
 	}
 }
 
-
 /**
- * @param {string} txt 
- * @returns {string}
+ * @template {import("svelte").Component} T
+ * @param {T} comp 
+ * @param {Svelte4BCConfig} config
+ * @returns {T}
  */
-function gray(txt) {
-	return '\x1b[30m' + txt + '\x1b[0m';
-}
-
-/**
- * @param {string} txt 
- * @returns {string}
- */
-function blue(txt) {
-	return '\x1b[36m' + txt + '\x1b[0m';
-}
-/**
- * @param {string} txt 
- * @returns {string}
- */
-function green(txt) {
-	return '\x1b[32m' + txt + '\x1b[0m';
-}
-
-/**
- * Svelte4-BC vite plugin
- * @param {boolean?} show_logs
- * @returns { {name: string, config:(conf:any,env:any)=>void, transform: (code: string, id: string, options?: {ssr?:boolean})=>string|undefined}}
- */
-export function svelte4BC(show_logs = false) {
-	const regex = /function (.+)\(\$\$((anchor)|(payload)), \$\$props\) {/;
-	const prefix = gray('[Svelte4-BC]');
-	const server = blue('server');
-	const client = blue('client');
-
-	let is_dev = false;
-	let mode = 'PROD';
-	return {
-		name: 'svelte4-bc', // required, will show up in warnings and errors
-		config: (conf, env) => {
-			is_dev = env.mode === 'development';
-			mode = is_dev ? green('DEV') : blue('PROD');
-			if (show_logs) {
-				console.info(`${prefix} Build in ${mode} mode`);
-			}
-		},
-		transform(code, id, options) {
-			if (id.endsWith('.svelte') && code.includes('\nexport const svelte4_bc =')) {
-				const ssr = options?.ssr === true;
-				if (show_logs) {
-					console.info(`${prefix} Transform ${ssr ? server : client}/${mode} for ${blue(id)}`);
-				}
-				let import_name = 'svelte4_bc_convert';
-				let svelte4_bc_convert = import_name;
-				while (code.includes(svelte4_bc_convert)) {
-					svelte4_bc_convert += '1';
-				}
-				if (svelte4_bc_convert != import_name) {
-					import_name += ' as ' + svelte4_bc_convert;
-				}
-				let args = '';
-				if (is_dev) {
-					args = `, "${id.replaceAll('"','_')}"`;
-					if (ssr) {
-						args += ", true";
-					}
-				}
-				return `import { ${import_name} } from "svelte4-bc";\n` +
-					code.replace(regex, (match, func) => {
-						const comp_name = is_dev ? `"${id.replaceAll('"','_')}"`: (func + '.name');
-						return match + ` ${svelte4_bc_convert}($$props, svelte4_bc${args});`
-					});
-			}
-		}
-	}
+export function Svelte4BCWrapper(comp, config) {
+	// How to handle SSR ?
+	return /** @type {T} */ (($$anchor, $$props) => {
+		svelte4_bc_convert($$props, config);
+		return comp($$anchor, $$props);
+	});
 }

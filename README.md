@@ -22,12 +22,12 @@ In a **Svelte 5** project, install the package **svelte4-bc** :
 And edit the file `vite.config.js` in order to add the plugin :
 ```diff
 import { sveltekit } from '@sveltejs/kit/vite';
-+import { svelte4BC } from 'svelte4-bc';
++import { svelte4BCPlugin } from 'svelte4-bc/plugin';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
 -	plugins: [sveltekit()]
-+	plugins: [sveltekit(), svelte4BC()]
++	plugins: [sveltekit(), svelte4BCPlugin()]
 });
 ```
 

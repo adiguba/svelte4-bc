@@ -1,31 +1,22 @@
+import { Component } from "svelte";
 
-type Svelte4BC_PropConfig = {
+type Svelte4BCPropConfig = {
     prop: name;
     args: string[];
 }
 
-type Svelte4BC_EventWrapper = (fn: EventListener) => EventListener
+type Svelte4BCEventWrapper = (fn: EventListener) => EventListener
 
-type Svelte4BC_EventConfig = {
+type Svelte4BCEventConfig = {
     prop: name;
-    wrap: Svelte4BC_EventWrapper | Array<Svelte4BC_EventWrapper>;
+    wrap: Svelte4BCEventWrapper | Array<Svelte4BCEventWrapper>;
 }
 
-export type Svelte4BC_Config = false | {
-    slots?: false | Record<string, boolean | string | string[] | Svelte4BC_PropConfig>;
-    events?: false | Record<string, boolean | string | Svelte4BC_EventWrapper | Array<Svelte4BC_EventWrapper> | Svelte4BC_EventConfig>;
+export type Svelte4BCConfig = false | {
+    slots?: false | Record<string, boolean | string | string[] | Svelte4BCPropConfig>;
+    events?: false | Record<string, boolean | string | Svelte4BCEventWrapper | Array<Svelte4BCEventWrapper> | Svelte4BCEventConfig>;
     no_dispatch?: boolean;
 }
 
-/**
- * Svelte4-BC vite plugin
- * @param {boolean?} show_logs
- * @returns { {name: string, config:(conf:any,env:any)=>void, transform: (code: string, id: string, options?: {ssr?:boolean})=>string|undefined}}
- */
-export function svelte4BC(show_logs?: boolean | null): {
-    name: string;
-    config: (conf: any, env: any) => void;
-    transform: (code: string, id: string, options?: {
-        ssr?: boolean;
-    }) => string | undefined;
-};
+
+export declare function Svelte4BCWrapper<T extends Component>(comp: T, config: any): T
