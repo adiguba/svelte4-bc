@@ -1,5 +1,13 @@
 /** @import { Svelte4BCConfig, Svelte4BCPropConfig, Svelte4BCEventConfig, Svelte4BCEventWrapper } from "./index.js" */
-/** @import { Props } from "./internal.js" */
+
+/**
+ * Internal définition for Svelte $$props :
+ * @typedef {Record<string,any> & 
+ * 	{
+ * 		$$slots?: Record<string, true | Function>,
+ * 		$$events?: Record<string, EventListener | Array<EventListener>>
+ * 	}} Props
+ */
 
 import { BROWSER, DEV } from "esm-env";
 import { handlers } from "svelte/legacy";
