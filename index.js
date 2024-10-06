@@ -293,6 +293,7 @@ function verify_dispatch(props, componentName) {
 			console.error(
 				`[Svelte4-BC] Illegal dispatch of event "on:${prop.toString()}" for component ${componentName}`
 			);
+			return Reflect.get(target, prop, receiver);
 		}
 	});
 }
