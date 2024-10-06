@@ -2,16 +2,15 @@
 
 /**
  * Internal définition for Svelte $$props :
- * @typedef {Record<string,any> & 
+ * @typedef {Record<string,any> &
  * 	{
  * 		$$slots?: Record<string, true | Function>,
  * 		$$events?: Record<string, EventListener | Array<EventListener>>
  * 	}} Props
  */
 
-import { BROWSER, DEV } from "esm-env";
-import { handlers } from "svelte/legacy";
-
+import { BROWSER, DEV } from 'esm-env';
+import { handlers } from 'svelte/legacy';
 
 /**
  * @param {Props} props
@@ -50,11 +49,14 @@ function create_slot_wrapper(slot, args) {
 			let slotParams;
 			if (params.length > 1 && params[0] != null && typeof params[0] === 'object') {
 				if (BROWSER) {
-					slotParams = new Proxy({}, {
-						get(target, prop, receiver) {
-							return Reflect.get(params[0](), prop, receiver);
+					slotParams = new Proxy(
+						{},
+						{
+							get(target, prop, receiver) {
+								return Reflect.get(params[0](), prop, receiver);
+							}
 						}
-					});
+					);
 				} else {
 					slotParams = params[0];
 				}
@@ -62,7 +64,7 @@ function create_slot_wrapper(slot, args) {
 				slotParams = {};
 			}
 			slot(anchor, slotParams);
-		}
+		};
 	}
 	return (anchor, ...params) => {
 		/** @type {Record<string,any>} */
@@ -71,14 +73,14 @@ function create_slot_wrapper(slot, args) {
 		args.forEach((name, index) => {
 			if (name && index < max) {
 				if (BROWSER) {
-					Object.defineProperty(slotParams, name, { get: ()=>params[index] });
+					Object.defineProperty(slotParams, name, { get: () => params[index] });
 				} else {
 					slotParams[name] = params[index];
 				}
 			}
 		});
 		slot(anchor, slotParams);
-	}
+	};
 }
 
 /**
@@ -131,13 +133,17 @@ function populate_slots(props, metadata, componentName) {
 		if (!is_default && prop in props) {
 			// Conflict between slot and prop
 			if (DEV) {
-				console.error(`[Svelte4-BC] Conflict between slot="${name}" and prop '${prop}' for component ${componentName}`);
+				console.error(
+					`[Svelte4-BC] Conflict between slot="${name}" and prop '${prop}' for component ${componentName}`
+				);
 			}
 			continue;
 		}
 
 		if (DEV) {
-			console.warn(`[Svelte4-BC] slot "${name}" mapped into prop "${prop}" for component ${componentName}`);
+			console.warn(
+				`[Svelte4-BC] slot "${name}" mapped into prop "${prop}" for component ${componentName}`
+			);
 		}
 
 		const slot = /** @type {Function} */ (props.$$slots[name]);
@@ -146,8 +152,8 @@ function populate_slots(props, metadata, componentName) {
 }
 
 /**
- * 
- * @param {Array<Svelte4BCEventWrapper>} wrappers 
+ *
+ * @param {Array<Svelte4BCEventWrapper>} wrappers
  * @returns {Svelte4BCEventWrapper}
  */
 function wrap_all(wrappers) {
@@ -156,12 +162,12 @@ function wrap_all(wrappers) {
 			fn = wrap(fn);
 		}
 		return fn;
-	}
+	};
 }
 
 /**
  * Return the translated name of the event
- * @param {string} name 
+ * @param {string} name
  * @param {false | undefined | Record<string, boolean | string | Svelte4BCEventWrapper | Array<Svelte4BCEventWrapper> | Svelte4BCEventConfig>} metadata
  * @return {[string | null, Svelte4BCEventWrapper | null ]}
  */
@@ -220,27 +226,29 @@ function populate_events(props, metadata, componentName) {
 		if (prop in props) {
 			// Conflict between slot and prop
 			if (DEV) {
-				console.error(`[Svelte4-BC] Conflict between directive "on:${name}" and prop '${prop}' for component ${componentName}`);
+				console.error(
+					`[Svelte4-BC] Conflict between directive "on:${name}" and prop '${prop}' for component ${componentName}`
+				);
 			}
 			continue;
 		}
 
 		if (DEV) {
-			console.warn(`[Svelte4-BC] directive "on:${name}" mapped into prop "${prop}" for component ${componentName}`);
+			console.warn(
+				`[Svelte4-BC] directive "on:${name}" mapped into prop "${prop}" for component ${componentName}`
+			);
 		}
 
 		let event = props.$$events[name];
 		if (Array.isArray(event)) {
-			event = handlers(...event)
+			event = handlers(...event);
 		}
 		if (wrap) {
 			event = wrap(event);
 		}
 		props[prop] = event;
 	}
-
 }
-
 
 /**
  * @param {Props} props
@@ -260,7 +268,9 @@ function create_dispatch_proxy(props, metadata, componentName) {
 					return undefined;
 				}
 				if (DEV) {
-					console.warn(`[Svelte4-BC] dispatch("${p}") mapped into prop "${prop}" for component ${componentName}`);
+					console.warn(
+						`[Svelte4-BC] dispatch("${p}") mapped into prop "${prop}" for component ${componentName}`
+					);
 				}
 				let event = props[prop];
 				if (event && wrap) {
@@ -280,7 +290,9 @@ function create_dispatch_proxy(props, metadata, componentName) {
 function verify_dispatch(props, componentName) {
 	props.$$events = new Proxy(props.$$events ?? {}, {
 		get(target, prop, receiver) {
-			console.error(`[Svelte4-BC] Illegal dispatch of event "on:${prop.toString()}" for component ${componentName}`);
+			console.error(
+				`[Svelte4-BC] Illegal dispatch of event "on:${prop.toString()}" for component ${componentName}`
+			);
 		}
 	});
 }
@@ -290,20 +302,28 @@ function verify_dispatch(props, componentName) {
  * @param {Props} props the props
  */
 function create_DEV_proxy(props) {
-	return new Proxy({}, {
-		get(target, p, receiver) {
-			return Reflect.get(target, p, receiver) ?? Reflect.get(props, p, receiver);
-		},
-		ownKeys(target) {
-			return [...Reflect.ownKeys(props).filter(p => !(p in target)), ...Reflect.ownKeys(target)];
-		},
-		has(target, p) {
-			return Reflect.has(target, p) || Reflect.has(props, p);
-		},
-		getOwnPropertyDescriptor(target, p) {
-			return Reflect.getOwnPropertyDescriptor(target, p) ?? Reflect.getOwnPropertyDescriptor(props, p);
+	return new Proxy(
+		{},
+		{
+			get(target, p, receiver) {
+				return Reflect.get(target, p, receiver) ?? Reflect.get(props, p, receiver);
+			},
+			ownKeys(target) {
+				return [
+					...Reflect.ownKeys(props).filter((p) => !(p in target)),
+					...Reflect.ownKeys(target)
+				];
+			},
+			has(target, p) {
+				return Reflect.has(target, p) || Reflect.has(props, p);
+			},
+			getOwnPropertyDescriptor(target, p) {
+				return (
+					Reflect.getOwnPropertyDescriptor(target, p) ?? Reflect.getOwnPropertyDescriptor(props, p)
+				);
+			}
 		}
-	});
+	);
 }
 
 /**
@@ -311,7 +331,7 @@ function create_DEV_proxy(props) {
  * @param {Props} props the props
  * @param {Svelte4BCConfig} config the svelte4_bc config
  * @param {string | undefined} [componentName]
- * @returns {Props} 
+ * @returns {Props}
  */
 export function svelte4_bc_convert(props, config, componentName) {
 	if (DEV && BROWSER) {
@@ -342,7 +362,7 @@ export function svelte4_bc_convert(props, config, componentName) {
 			verify_events(props, componentName);
 			verify_dispatch(props, componentName);
 		}
-	} 
+	}
 	return props;
 }
 
@@ -354,7 +374,9 @@ export function svelte4_bc_convert(props, config, componentName) {
  * @returns {T}
  */
 export function Svelte4BCWrapper(Component, config, componentName) {
-	return /** @type {T} */ (($$anchor, $$props) => {
-		return Component($$anchor, svelte4_bc_convert($$props, config, componentName));
-	});
+	return /** @type {T} */ (
+		($$anchor, $$props) => {
+			return Component($$anchor, svelte4_bc_convert($$props, config, componentName));
+		}
+	);
 }

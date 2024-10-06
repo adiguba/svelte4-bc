@@ -4,9 +4,13 @@
  * @returns { {name: string, config:(conf:any,env:any)=>void, transform: (code: string, id: string, options?: {ssr?:boolean})=>string|undefined}}
  */
 export declare function svelte4BCPlugin(show_logs?: boolean | null): {
-    name: string;
-    config: (conf: any, env: any) => void;
-    transform: (code: string, id: string, options?: {
-        ssr?: boolean;
-    }) => string | undefined;
+	name: string;
+	config: (conf: any, env: any) => void;
+	transform: (
+		code: string,
+		id: string,
+		options?: {
+			ssr?: boolean;
+		}
+	) => string | undefined;
 };
