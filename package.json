@@ -15,8 +15,10 @@
     }
   },
   "scripts": {
+    "check": "tsc --project ./jsconfig.json",
     "lint": "eslint",
     "format": "prettier --write .",
+    "build": "pnpm run format && pnpm run lint && pnpm run check",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "packageManager": "pnpm@9.4.0",
@@ -38,6 +40,13 @@
   "peerDependencies": {
     "svelte": "^5.0.0-next.262"
   },
+  "devDependencies": {
+    "@eslint/js": "^9.12.0",
+    "eslint": "^9.12.0",
+    "globals": "^15.10.0",
+    "prettier": "^3.3.3",
+    "typescript": "^5.6.2"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/adiguba/svelte4-bc.git"
@@ -45,11 +54,5 @@
   "bugs": {
     "url": "https://github.com/adiguba/svelte4-bc/issues"
   },
-  "homepage": "https://github.com/adiguba/svelte4-bc#readme",
-  "devDependencies": {
-    "@eslint/js": "^9.12.0",
-    "eslint": "^9.12.0",
-    "globals": "^15.10.0",
-    "prettier": "^3.3.3"
-  }
+  "homepage": "https://github.com/adiguba/svelte4-bc#readme"
 }
