@@ -49,6 +49,14 @@ export function svelte4BCPlugin(show_logs = false) {
                     const ssr = options?.ssr === true;
 					console.info(`${prefix} Transform ${ssr ? server : client}/${mode} for ${blue(id)}`);
 				}
+
+				if (code.includes('$.slot(')) {
+					throw new Error("Cannot use both `svelte4_bc` and `<slot/>` !");
+				}
+				if (code.includes('$.event(')) {
+					throw new Error("Cannot use both `svelte4_bc` and `on:event` directive !");
+				}
+
 				let import_name = 'svelte4_bc_convert';
 				let svelte4_bc_convert = import_name;
 				while (code.includes(svelte4_bc_convert)) {
