@@ -19,4 +19,4 @@ export type Svelte4BCConfig = false | {
 }
 
 
-export declare function Svelte4BCWrapper<T extends Component>(comp: T, config: any): T
+export declare function Svelte4BCWrapper<T extends Component>(Component: T, config: any, componentName?: string): T
