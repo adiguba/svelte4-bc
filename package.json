@@ -1,6 +1,6 @@
 {
   "name": "svelte4-bc",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Svelte 4 Backward Compatibility for Svelte 5",
   "type": "module",
   "main": "index.js",

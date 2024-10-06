@@ -15,7 +15,7 @@ type Svelte4BCEventConfig = {
 export type Svelte4BCConfig = false | {
     slots?: false | Record<string, boolean | string | string[] | Svelte4BCPropConfig>;
     events?: false | Record<string, boolean | string | Svelte4BCEventWrapper | Array<Svelte4BCEventWrapper> | Svelte4BCEventConfig>;
-    no_dispatch?: boolean;
+    dispatch?: boolean;
 }
 
 

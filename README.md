@@ -5,6 +5,10 @@
 > [!CAUTION]
 > **Version under development - API may not be final**
 
+## Goals
+
+The purpose of this package is to enable a step-by-step migration of components, by maintaining backward compatibility from caller's code, even after converting a component to the new **Svelte 5** syntax (*snippets/handlers*).
+
 ## Why ?
 
 **Svelte 5** is already backwards compatible with the **Svelte 4** syntax (*slots, on:events* directives), but only for **Svelte 4** components.
