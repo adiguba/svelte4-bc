@@ -47,7 +47,7 @@ function create_slot_wrapper(slot, args) {
 	if (args.length === 0) {
 		return (anchor, ...params) => {
 			let slotParams;
-			if (params.length > 1 && params[0] != null && typeof params[0] === 'object') {
+			if (params.length > 0 && params[0] instanceof Object) {
 				if (BROWSER) {
 					slotParams = new Proxy(
 						{},
