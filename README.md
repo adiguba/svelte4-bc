@@ -2,12 +2,11 @@
 
 **svelte4-bc** is a plugin that improves Svelte 4 backwards compatibility in Svelte 5
 
-> [!CAUTION]
-> **Version under development - API may not be final**
-
 ## Goals
 
 The purpose of this package is to enable a step-by-step migration of components, by maintaining backward compatibility from caller's code, even after converting a component to the new **Svelte 5** syntax (*snippets/handlers*).
+
+This allows you to migrate a component without breaking all the code that uses it.
 
 ## Why ?
 
@@ -228,4 +227,51 @@ But it is still possible to use multiples parameters, by configuring this plugin
 
 ### Event dispatcher
 
-> *TODO*
+
+```svelte
+<!-- Svelte 4 -->
+<script>
+	import { createEventDispatcher } from 'svelte';
+
+  const dispatch = createEventDispatcher();
+
+  // ...
+  dispatch("custom");
+</script>
+```
+
+`createEventDispatcher` is deprecated in **Svelte 5**, and should be replaced by callback props.
+
+
+```svelte
+<!-- Svelte 5 -->
+<script>
+  let { oncustom } = $props();
+
+  // ...
+  oncustom?.();
+</script>
+```
+
+However, it's possible to enable a compatibility mode by setting `dispatch: true` in `svelte4_bc`.
+In this mode, the dispatched event will be mapped to the equivalent callback props, like for event.
+
+```svelte
+<script module>
+  export const svelte4_bc = {
+    events: {
+      custom: true
+    },
+    dispatch: true
+  }
+</script>
+<!-- Svelte 5 -->
+<script>
+	import { createEventDispatcher } from 'svelte';
+
+  const dispatch = createEventDispatcher();
+
+  // ...
+  dispatch("custom"); // will be equivalent to oncustom?.();
+</script>
+```
